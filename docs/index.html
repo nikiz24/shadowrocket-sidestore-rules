@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Shadowrocket · 一键安装</title>
+<style>
+  :root{color-scheme:light dark;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f5f3;color:#1c2520}
+  *{box-sizing:border-box}body{margin:0;min-height:100vh;padding:56px 24px}
+  main{max-width:580px;margin:auto}small{font-size:12px;letter-spacing:2px;color:#52705c}
+  h1{font-size:clamp(32px,8vw,46px);line-height:1.15;letter-spacing:-1.5px;margin:20px 0}
+  p{font-size:16px;line-height:1.85;color:#526158}a{color:#176742}
+  .button{display:block;text-align:center;padding:19px 12px;margin:30px 0 14px;color:#fff;background:#176742;text-decoration:none;border-radius:12px;font-weight:650}
+  .note{font-size:13px;margin:0 0 36px}section{border-top:1px solid #d9e0da;padding-top:22px;margin-top:28px}
+  h2{font-size:18px;letter-spacing:0;margin:0 0 12px}ol{padding-left:22px;color:#526158;line-height:1.9;font-size:15px}
+  li{margin-bottom:12px}.qr{display:block;width:180px;height:180px;margin:18px auto;background:#fff;border:10px solid white;border-radius:10px}
+  details{margin-top:22px;font-size:14px}summary{cursor:pointer}code{display:block;word-break:break-all;line-height:1.7;font-size:12px;padding:14px;background:#e9eee9;border-radius:8px;margin:12px 0}
+  footer{font-size:12px;color:#68746c;margin-top:36px;line-height:1.9}
+  @media(prefers-color-scheme:dark){:root{background:#101912;color:#e3eae4}p,ol{color:#acbbaf}small,a{color:#9bc9ac}section{border-color:#304034}code{background:#1c2b20}.button{background:#338559;color:#fff}footer{color:#9aa99e}}
+</style>
+<main>
+  <small>SHADOWROCKET · SIDESTORE</small>
+  <h1>分流、去广告与续签，<br>一次导入。</h1>
+  <p>一个可更新的模块，包含国内外分流、广告拦截、SideStore 本机回环和 MITM 设置。你的证书留在本机。</p>
+  <a class="button" id="install" href="shadowrocket://install?module=https%3A%2F%2Fraw.githubusercontent.com%2Fnikiz24%2Fshadowrocket-sidestore-rules%2Fmain%2FShadowrocket-SideStore.sgmodule">一键导入到 Shadowrocket ↗</a>
+  <p class="note">请在 iPhone 的 Safari 中打开。Shadowrocket 将提示你安装此模块。</p>
+  <section>
+    <h2>首次使用</h2>
+    <ol>
+      <li>在 Shadowrocket 选择本地 <strong>default.conf</strong>，全局路由设为“配置”。</li>
+      <li>点击上方按钮，安装并启用模块。断开再重新连接 VPN。</li>
+      <li>在当前配置的“HTTPS 解密”里生成并安装 CA，再到 iOS 的“证书信任设置”中信任它。首次需要完成一次。</li>
+    </ol>
+    <p class="note">需使用支持 10.7.0.1/32 回环的新版。请先在 SideStore 中手动刷新验证，再设置自动续签。</p>
+  </section>
+  <section>
+    <h2>以后自动更新</h2>
+    <p>在 Shadowrocket 的“设置 → 自动更新 → 模块”中选择每天更新，并允许后台 App 刷新。证书随本地 default.conf 保留。</p>
+    <p class="note">MITM 默认作用于 Google CN 跳转域名。IPA 的签名、配对与刷新由你使用的 SideStore / 签名工具完成。</p>
+  </section>
+  <details>
+    <summary>电脑上查看？用 iPhone 扫码安装</summary>
+    <img class="qr" src="install.png" width="180" height="180" alt="扫描后将打开 Shadowrocket 安装模块">
+  </details>
+  <details>
+    <summary>按钮未打开？复制模块地址</summary>
+    <p>到 Shadowrocket“配置 → 模块 → ＋”粘贴：</p>
+    <code>https://raw.githubusercontent.com/nikiz24/shadowrocket-sidestore-rules/main/Shadowrocket-SideStore.sgmodule</code>
+  </details>
+  <footer>基于 Moshel / Johnshall 的规则，遵循 CC BY-SA 4.0。<br><a href="https://github.com/nikiz24/shadowrocket-sidestore-rules">查看源码、许可与完整说明</a></footer>
+</main>
+</html>
