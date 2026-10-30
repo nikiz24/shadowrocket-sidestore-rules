@@ -20,18 +20,24 @@
 </style>
 <main>
   <small>SHADOWROCKET · SIDESTORE</small>
-  <h1>分流、去广告与续签，<br>一次导入。</h1>
-  <p>一个可更新的模块，包含国内外分流、广告拦截、SideStore 本机回环和 MITM 设置。你的证书留在本机。</p>
+  <h1>分流与去广告，<br>一次导入。</h1>
+  <p>一个可更新的分流与 MITM 模块。要用 Shadowrocket 为 SideStore 提供本机回环，还需开启手机中的原生回环开关，并准备有效配对文件。</p>
   <a class="button" id="install" href="shadowrocket://install?module=https%3A%2F%2Fraw.githubusercontent.com%2Fnikiz24%2Fshadowrocket-sidestore-rules%2Fmain%2FShadowrocket-SideStore.sgmodule">一键导入到 Shadowrocket ↗</a>
   <p class="note">请在 iPhone 的 Safari 中打开。Shadowrocket 将提示你安装此模块。</p>
   <section>
     <h2>首次使用</h2>
     <ol>
       <li>在 Shadowrocket 选择本地 <strong>default.conf</strong>，全局路由设为“配置”。</li>
-      <li>点击上方按钮，安装并启用模块。断开再重新连接 VPN。</li>
-      <li>在当前配置的“HTTPS 解密”里生成并安装 CA，再到 iOS 的“证书信任设置”中信任它。首次需要完成一次。</li>
+      <li>点击上方按钮，安装并启用模块。</li>
+      <li>为 SideStore 续签：到 Shadowrocket“设置 → 其它”，开启 <strong>Include Route 10.7.0.1/32</strong>，再断开重连 VPN。续签时连接 Wi-Fi。</li>
+      <li>为 HTTPS 重写：在当前配置的“HTTPS 解密”里生成、安装 CA，再到 iOS 的“证书信任设置”中信任它。这一步与续签独立。</li>
     </ol>
     <p class="note">需使用支持 10.7.0.1/32 回环的新版。请先在 SideStore 中手动刷新验证，再设置自动续签。</p>
+  </section>
+  <section>
+    <h2>提示配对文件无效或缺失？</h2>
+    <p>用 USB 连接并解锁 iPhone。在电脑 iloader 中打开“管理配对文件”，找到 LiveContainer，点击“放置”。完全退出再重开 LiveContainer 后重试。</p>
+    <p class="note">VPN 模块不能生成配对文件。文件已经导入但仍提示无效时，需要重新配对这台设备。</p>
   </section>
   <section>
     <h2>以后自动更新</h2>
