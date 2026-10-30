@@ -1,5 +1,4 @@
 import importlib.util
-import ipaddress
 from pathlib import Path
 import unittest
 
@@ -33,15 +32,12 @@ class BuildTest(unittest.TestCase):
         self.assertEqual([s for s in new["URL Rewrite"] if s.strip()], [s for s in old["URL Rewrite"] if s.strip()])
         self.assertEqual(metadata["module_rules"], 1004)
 
-    def test_bypass_set_removes_exactly_one_address(self):
+    def test_module_does_not_claim_to_configure_native_tunnel(self):
         module, _ = builder.build(fixture())
-        line = next(l for l in builder.sections(module)["General"] if l.startswith("tun-excluded-routes"))
-        networks = [ipaddress.ip_network(n.strip()) for n in line.split("=", 1)[1].split(",")]
-        self.assertFalse(any(builder.TARGET.network_address in n for n in networks if n.version == 4))
-        self.assertEqual(sum(n.num_addresses for n in networks if n.version == 4), 2**24 - 1 + 2**16)
-        restored = list(ipaddress.collapse_addresses([n for n in networks if n.version == 4] + [builder.TARGET]))
-        self.assertEqual(restored, [ipaddress.ip_network("10.0.0.0/8"), ipaddress.ip_network("192.168.0.0/16")])
-        self.assertIn(ipaddress.ip_network("fc00::/7"), networks)
+        self.assertEqual(set(builder.sections(module)), {"Rule", "URL Rewrite", "MITM"})
+        self.assertNotIn("tun-included-routes =", module)
+        self.assertNotIn("tun-excluded-routes =", module)
+        self.assertIn("manually enable Shadowrocket Settings > Other > Include Route 10.7.0.1/32", module)
 
     def test_module_leaves_certificate_and_base_config_local(self):
         module, _ = builder.build(fixture().replace("dns-server = system", "dns-server = system\nupdate-url = https://example.org/base.conf"))
