@@ -99,7 +99,7 @@ python3 -m unittest discover -s tests -v
 python3 scripts/build.py
 ```
 
-构建信息见 [build-info.json](build-info.json)。检查覆盖原规则顺序、原 URL 重写、模块不冒充原生隧道设置、拒绝异常上游、CA 数据不进入发布模块。手机端的模块编译、续签、MITM 与后台更新仍需在实际设备中验证。
+构建信息见 [build-info.json](build-info.json)。静态检查覆盖原规则顺序、原 URL 重写、模块不冒充原生隧道设置、拒绝异常上游、CA 数据不进入发布模块。手机端实测范围见下，其他功能与版本组合需分别验证。
 
 2026-11-02 的实机续签验证环境为 iOS **27.0.1**、Shadowrocket **2.2.93**、LiveContainer **3.8.11**、内置 SideStore **0.7.0-20261017.511+ee3cc16a**。Remote Endpoint 模式下 `10.7.0.1:49152` 可达、RPPairing 成功、读取 UDID 成功；重新签名后日志显示安装证书有效，普通 Refresh 成功，手动执行每日快捷指令刷新成功。**定时自动触发和锁屏执行尚未在本轮验证，需检查下一次自动化运行及到期时间。**
 
