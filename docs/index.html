@@ -21,7 +21,7 @@
 <main>
   <small>SHADOWROCKET · SIDESTORE</small>
   <h1>分流与去广告，<br>一次导入。</h1>
-  <p>一个可更新的分流与 MITM 模块。要用 Shadowrocket 为 SideStore 提供本机回环，还需开启手机中的原生回环开关，并准备有效配对文件。</p>
+  <p>使用 Shadowrocket 提供本机回环，同时更新分流与去广告规则。SideStore 需配好有效配对文件，并把实际设备地址固定为 10.7.0.1。</p>
   <a class="button" id="install" href="shadowrocket://install?module=https%3A%2F%2Fraw.githubusercontent.com%2Fnikiz24%2Fshadowrocket-sidestore-rules%2Fmain%2FShadowrocket-SideStore.sgmodule">一键导入到 Shadowrocket ↗</a>
   <p class="note">请在 iPhone 的 Safari 中打开。Shadowrocket 将提示你安装此模块。</p>
   <section>
@@ -30,9 +30,22 @@
       <li>在 Shadowrocket 选择本地 <strong>default.conf</strong>，全局路由设为“配置”。</li>
       <li>点击上方按钮，安装并启用模块。</li>
       <li>为 SideStore 续签：到 Shadowrocket“设置 → 其它”，开启 <strong>Include Route 10.7.0.1/32</strong>，再断开重连 VPN。续签时连接 Wi-Fi。</li>
+      <li>在新版内置 SideStore“Settings → Connection Configuration”中，<strong>关闭 Use Local VPN</strong>，在 <strong>Remote Endpoint → Device IP</strong> 填入 <strong>10.7.0.1</strong>，RemotePair Port 留空，点击 Confirm。此处只切换 SideStore 的连接模式，Shadowrocket 继续连接。</li>
       <li>为 HTTPS 重写：在当前配置的“HTTPS 解密”里生成、安装 CA，再到 iOS 的“证书信任设置”中信任它。这一步与续签独立。</li>
     </ol>
-    <p class="note">需使用支持 10.7.0.1/32 回环的新版。请先在 SideStore 中手动刷新验证，再设置自动续签。</p>
+    <p class="note">旧合并版可能自动连到 198.18.0.2，且没有可编辑的设备地址。官方 Nightly 合并版 LiveContainer 3.8.11 / SideStore 0.7.0 提供上述设置。其本机 VPN 自动识别仍可能清空端点，因此这里使用 Remote Endpoint。升级前请备份数据，再分别测试手动刷新与重连后的刷新。</p>
+  </section>
+  <section>
+    <h2>每日自动续签</h2>
+    <p>新建快捷指令“LiveContainer 自动续签”，依次添加：</p>
+    <ol>
+      <li>设置 VPN：连接 Shadowrocket。</li>
+      <li>等待 5 秒。</li>
+      <li>LiveContainer：刷新所有 App / Refresh All Apps。</li>
+    </ol>
+    <p>先手动运行，确认到期时间更新；再添加“特定时间 → 每天 → 立即运行”自动化，并测试锁屏执行。</p>
+    <p class="note">每日续签与下方的规则自动更新分别配置。两者都只使用 Shadowrocket 作为 VPN。</p>
+    <p class="note">2026-11-02 已验证上述版本组合的普通 Refresh 和手动执行续签快捷指令成功。定时、锁屏执行仍需检查下一次运行结果。</p>
   </section>
   <section>
     <h2>提示配对文件无效或缺失？</h2>
@@ -40,10 +53,18 @@
     <p class="note">VPN 模块不能生成配对文件。文件已经导入但仍提示无效时，需要重新配对这台设备。</p>
   </section>
   <section>
-    <h2>以后自动更新</h2>
+    <h2>规则自动更新</h2>
     <p>在 Shadowrocket 的“设置 → 自动更新 → 模块”中选择每天更新，并允许后台 App 刷新。证书随本地 default.conf 保留。</p>
     <p class="note">MITM 默认作用于 Google CN 跳转域名。IPA 的签名、配对与刷新由你使用的 SideStore / 签名工具完成。</p>
   </section>
+  <details>
+    <summary>early eof 或 DDI Not Mounted？</summary>
+    <p>先检查 SideStore 实际连接地址。旧版可能误选 198.18.0.2；新版的 Use Local VPN 模式在接口识别失败时也可能清空设备端点。按上文使用 Remote Endpoint，固定为 10.7.0.1。若仍失败，再检查配对和开发者服务。</p>
+  </details>
+  <details>
+    <summary>安装证书已被撤销？</summary>
+    <p>确认当前 SideStore 持有有效证书后，在 My Apps 长按 LiveContainer，选择 Resign。扩展提示选择 Keep App Extensions (Use Main Profile)。重签安装完成后再测试 Refresh。</p>
+  </details>
   <details>
     <summary>电脑上查看？用 iPhone 扫码安装</summary>
     <img class="qr" src="install.png" width="180" height="180" alt="扫描后将打开 Shadowrocket 安装模块">
