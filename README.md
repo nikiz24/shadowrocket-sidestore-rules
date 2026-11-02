@@ -13,7 +13,7 @@
 1. 在 Shadowrocket 中选择**本地 `default.conf`**，全局路由设为“配置”，选择自己的有效节点。
 2. 扫上方二维码，或在 iPhone Safari 打开安装页，点击“一键导入到 Shadowrocket”，按提示安装并启用这一个模块。
 3. 在 **Shadowrocket → 设置 → 其它 → Include Route 10.7.0.1/32** 开启原生回环。不同语言/版本可能显示为“包含路由 10.7.0.1/32”。断开并重连 VPN，连接 Wi-Fi。
-4. 在新版内置 SideStore 中打开 **Settings → Connection Configuration**，保持 **Use Local VPN** 开启，在 **User Configuration** 区域把 **Device IP** 填为 `10.7.0.1`，**RemotePair Port** 留空，然后点 **Confirm** 并按提示重新打开。这里的 Use Local VPN 是“使用本机 VPN”的通用模式，适用于 Shadowrocket。
+4. 在新版内置 SideStore 中打开 **Settings → Connection Configuration**，**关闭 Use Local VPN**；在出现的 **Remote Endpoint** 区域把 **Device IP** 填为 `10.7.0.1`，**RemotePair Port** 留空，然后点 **Confirm** 并按提示重新打开。此开关只切换 SideStore 的地址选择模式，Shadowrocket VPN 继续保持连接。
 5. 若还没配过 MITM：在当前 `default.conf` 的 `ⓘ → HTTPS 解密 → 证书`生成、安装 CA；随后在 iOS 的“证书信任设置”中信任它，并确认 HTTPS 解密已开启。**续签本身不依赖 MITM；这是额外的 HTTPS 重写功能。**
 6. 在 SideStore 中先手动 Refresh All，再断开重连 Shadowrocket、重开 LiveContainer 测试一次，确认实际连接地址没有被自动探测覆盖。成功后再设置每日快捷指令。
 
@@ -23,7 +23,9 @@ Shadowrocket 官方在 **2.2.91 (3386) 测试版**加入原生 `10.7.0.1/32` 回
 
 LiveContainer 3.8.0 携带的旧 SideStore 0.6.4 会从 VPN 接口推算对端。此次实机日志显示它把 Shadowrocket 的 `198.18.0.1/24` 推算为 `198.18.0.2`，连接后报 `early eof`。即使 `10.7.0.1` 的原生回环已经开启，旧版依然可能连错地址。
 
-旧版 **Health Check → VPN IP Configuration** 只展示探测结果，没有可编辑的 Device IP。应使用带有 **Connection Configuration → User Configuration → Device IP** 的构建。已核对官方 [Nightly 合并版](https://github.com/LiveContainer/LiveContainer/releases/tag/nightly) 的 LiveContainer **3.8.11** / SideStore **0.7.0-20261017.511+ee3cc16a** 包含这项功能；网络库对手动覆盖地址优先处理，并在重连时保留它。
+旧版 **Health Check → VPN IP Configuration** 只展示探测结果，没有可编辑的 Device IP。已核对官方 [Nightly 合并版](https://github.com/LiveContainer/LiveContainer/releases/tag/nightly) 的 LiveContainer **3.8.11** / SideStore **0.7.0-20261017.511+ee3cc16a** 提供可编辑的 **Connection Configuration**。
+
+在该构建的 **Use Local VPN** 模式中，即便手填的 `10.7.0.1` 已经可达，自动接口探测返回空值时，网络库仍会清空设备端点，出现 `DeviceEndpointNotInitialized`。本项目使用 **Remote Endpoint** 模式显式连接 `10.7.0.1`，绕过该接口判断。实机日志已确认通过 Shadowrocket 成功建立 RPPairing 连接，并读取设备 UDID；完整刷新和后台执行仍要在证书有效的状态下分别验证。
 
 该包为 Nightly 构建。升级应保持相同 Apple ID 和 Bundle ID，使用原位安装，并先备份容器数据。不要仅凭 Health Check 的 `DDI Not Mounted` 就认定必须重装 DDI：连接失败时，旧版会把读取 DDI 状态的异常显示成未挂载。
 
@@ -78,7 +80,17 @@ https://raw.githubusercontent.com/nikiz24/shadowrocket-sidestore-rules/main/Shad
 
 先检查实际连接目标。若日志出现 `setTunnelPeerIp(198.18.0.2)` 或相似的自动探测地址，按上文升级到支持手动覆盖的 SideStore，再固定 Device IP 为 `10.7.0.1`。规则模块无法改写 SideStore 应用内部的目标选择。
 
-新版界面仍可能展示 **Auto Discovered from network** 的 `198.18.*` 地址；应重点查看 **User Configuration** 是否已保存 `10.7.0.1`，以及日志中的实际 device endpoint。若实际目标已经正确但仍失败，再检查回环开关、Wi-Fi、配对和开发者服务状态。
+在该构建中按上文关闭 **Use Local VPN**，确认 **Remote Endpoint → Device IP** 保存为 `10.7.0.1`。若日志显示 `tcpProbe 10.7.0.1:49152 → reachable`，但设备端点仍被设成 `nil`，先检查是否仍在 Use Local VPN 模式。连接成功应能看到实际端点为 `10.7.0.1`、RPPairing 建连成功以及读取 UDID 成功。目标正确仍失败时，再检查回环开关、Wi-Fi、配对和开发者服务。
+
+## 提示安装证书被撤销
+
+`The signing certificate used to install “LiveContainer” was revoked` 表示旧安装包签名已被撤销。普通 **Refresh** 仅续期描述文件，无法替换该签名。
+
+确认当前 SideStore 已登录并持有有效签名证书后，在 **My Apps** 长按 **LiveContainer → Resign** 重新签名安装。遇到扩展提示时选择 **Keep App Extensions (Use Main Profile)**。如需重新选择 IPA，可安装同版本官方合并包进行覆盖。保持相同账号和 Bundle ID，并先备份应用数据。完成后再测试普通 Refresh。
+
+## 升级后登录返回 -80045
+
+这是认证阶段的错误，与回环地址设置分别处理。此构建中可按近期社区处理记录尝试：关闭 **User Customizations → On-Device Anisette** 并重启；在 **Anisette Servers** 选择 **SideStore (New)**（`https://new.ani.sidestore.io`），关闭自动轮换；先 **Reset adi.pb**，再进入 **Anisette Client Configuration → Remote Server Sync → Fetch → Save as Overrides**，最后重新登录。重置会退出 SideStore 登录，但该构建保留现有签名证书。该认证方法依赖服务器与构建版本，不保证适用于所有账号。
 
 ## 开发与验证
 
@@ -97,6 +109,9 @@ python3 scripts/build.py
 - 原生开关位置：[LoopCtrl 的实际使用说明](https://github.com/Souitou-iop/LoopCtrl#requirements)。
 - 配对错误：[SideStore 官方诊断](https://docs.sidestore.io/docs/troubleshooting/error-codes)、[iloader 的合并版配对路径](https://github.com/nab138/iloader/blob/main/src-tauri/src/pairing.rs)。
 - 固定设备地址：[官方合并版连接设置](https://github.com/LiveContainer/SideStore/blob/ee3cc16a/SideStore/Views/Settings/Advanced/Connection/ConnectionConfigView.swift)、[网络库的覆盖地址处理](https://github.com/SideStore/minimuxer/blob/12be70dc2627307a16bfd2dc7a009080d5bec909/Sources/Services/DeviceConnectionManager.swift)。
+- 端点选择：[网络库的连接模式分支](https://github.com/SideStore/minimuxer/blob/12be70dc2627307a16bfd2dc7a009080d5bec909/Sources/Services/NetworkObserverService.swift)。
+- 证书验证：[刷新与重签的验证分支](https://github.com/LiveContainer/SideStore/blob/ee3cc16a/SideStore/Core/Operations/PipelineOperations/VerifyCertificateOperation.swift)。
+- 登录兼容设置：[SideStore 社区处理记录](https://github.com/SideStore/SideStore/issues/1675#issuecomment-6363989273)。
 - 合并版快捷指令动作：[LiveContainer 官方自动续签说明](https://livecontainer.github.io/docs/installation/lc_sidestore#auto-refresh-shortcut)。
 - 模块与安装协议：[Shadowrocket 社区手册](https://github.com/LOWERTOP/Shadowrocket/wiki)。
 
