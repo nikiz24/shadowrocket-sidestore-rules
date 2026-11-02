@@ -25,7 +25,7 @@ LiveContainer 3.8.0 携带的旧 SideStore 0.6.4 会从 VPN 接口推算对端�
 
 旧版 **Health Check → VPN IP Configuration** 只展示探测结果，没有可编辑的 Device IP。已核对官方 [Nightly 合并版](https://github.com/LiveContainer/LiveContainer/releases/tag/nightly) 的 LiveContainer **3.8.11** / SideStore **0.7.0-20261017.511+ee3cc16a** 提供可编辑的 **Connection Configuration**。
 
-在该构建的 **Use Local VPN** 模式中，即便手填的 `10.7.0.1` 已经可达，自动接口探测返回空值时，网络库仍会清空设备端点，出现 `DeviceEndpointNotInitialized`。本项目使用 **Remote Endpoint** 模式显式连接 `10.7.0.1`，绕过该接口判断。实机日志已确认通过 Shadowrocket 成功建立 RPPairing 连接，并读取设备 UDID；完整刷新和后台执行仍要在证书有效的状态下分别验证。
+在该构建的 **Use Local VPN** 模式中，即便手填的 `10.7.0.1` 已经可达，自动接口探测返回空值时，网络库仍会清空设备端点，出现 `DeviceEndpointNotInitialized`。本项目使用 **Remote Endpoint** 模式显式连接 `10.7.0.1`，绕过该接口判断。实机日志已确认通过 Shadowrocket 成功建立 RPPairing 连接并读取设备 UDID；有效证书重签后，普通 Refresh 成功，手动运行每日快捷指令也已确认刷新成功。
 
 该包为 Nightly 构建。升级应保持相同 Apple ID 和 Bundle ID，使用原位安装，并先备份容器数据。不要仅凭 Health Check 的 `DDI Not Mounted` 就认定必须重装 DDI：连接失败时，旧版会把读取 DDI 状态的异常显示成未挂载。
 
@@ -100,6 +100,8 @@ python3 scripts/build.py
 ```
 
 构建信息见 [build-info.json](build-info.json)。检查覆盖原规则顺序、原 URL 重写、模块不冒充原生隧道设置、拒绝异常上游、CA 数据不进入发布模块。手机端的模块编译、续签、MITM 与后台更新仍需在实际设备中验证。
+
+2026-11-02 的实机续签验证环境为 iOS **27.0.1**、Shadowrocket **2.2.93**、LiveContainer **3.8.11**、内置 SideStore **0.7.0-20261017.511+ee3cc16a**。Remote Endpoint 模式下 `10.7.0.1:49152` 可达、RPPairing 成功、读取 UDID 成功；重新签名后日志显示安装证书有效，普通 Refresh 成功，手动执行每日快捷指令刷新成功。**定时自动触发和锁屏执行尚未在本轮验证，需检查下一次自动化运行及到期时间。**
 
 ## 来源与许可
 
