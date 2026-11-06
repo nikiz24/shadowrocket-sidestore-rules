@@ -9,6 +9,7 @@ from urllib.request import Request, urlopen
 
 UPSTREAM = "https://raw.githubusercontent.com/Johnshall/Shadowrocket-ADBlock-Rules-Forever/release/sr_cnip_ad.conf"
 MODULE_NAME = "Shadowrocket-SideStore.sgmodule"
+TUN_INCLUDED_ROUTES = "0.0.0.0/0,10.7.0.1/32"
 RULE_TYPES = {"DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "IP-CIDR", "IP-CIDR6", "GEOIP", "FINAL"}
 
 
@@ -47,7 +48,7 @@ def build(text):
     upstream_build = upstream_build[1] if upstream_build else "unknown"
     header = [
         "#!name=CNIP AdBlock + SideStore + MITM",
-        "#!desc=Johnshall CNIP/ad-block rules and scoped MITM. For SideStore, separately enable Settings > Other > Include Route 10.7.0.1/32 in Shadowrocket and import a valid pairing file in SideStore. Keep your CA in a LOCAL base config.",
+        "#!desc=Johnshall CNIP/ad-block rules, IPv4 default/SideStore routes and scoped MITM. Separately enable Settings > Other > Include Route 10.7.0.1/32 and import valid SideStore pairing credentials. Keep your CA in a LOCAL base config.",
         "#!homepage=https://github.com/nikiz24/shadowrocket-sidestore-rules",
         "# Original rules: Moshel / Johnshall, CC BY-SA 4.0.",
         "# Source: " + UPSTREAM,
@@ -55,11 +56,13 @@ def build(text):
         "# Requires a Shadowrocket build with native 10.7.0.1/32 loopback support.",
         "# REQUIRED: manually enable Shadowrocket Settings > Other > Include Route 10.7.0.1/32.",
         "# A module cannot supply SideStore pairing credentials or the native loopback switch.",
-        "# General/profile options are intentionally omitted: module parsing is not runtime proof.",
+        "# General includes IPv4 default and SideStore routes; it does not enable native loopback.",
+        "# If module routing is not applied by your build, keep the same routes in the local base config.",
         "# This module intentionally contains no CA certificate/private key.",
         "",
     ]
     body = header
+    body += ["", "[General]", "tun-included-routes = " + TUN_INCLUDED_ROUTES]
     body += ["", "[Rule]", "IP-CIDR,10.7.0.1/32,DIRECT,no-resolve"] + source["Rule"]
     body += ["", "[URL Rewrite]"] + source["URL Rewrite"]
     body += ["", "[MITM]", "enable = true", "hostname = g.cn,*.g.cn,google.cn,*.google.cn", ""]

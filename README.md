@@ -1,6 +1,6 @@
 # Shadowrocket：分流、去广告和 MITM 模块，配合 SideStore 续签
 
-本项目的续签通路只使用 **Shadowrocket**。完整配置包含：原生 `Include Route 10.7.0.1/32` 开关、SideStore 的有效配对文件，以及固定到 `10.7.0.1` 的实际设备连接地址。导入规则模块本身不会设置这三项。
+本项目的续签通路只使用 **Shadowrocket**。模块内置 IPv4 互联网默认路由、续签地址路由以及分流、去广告和 MITM 设置。手机上仍需单独开启原生 `Include Route 10.7.0.1/32` 开关，为 SideStore 导入有效配对文件，并把实际设备连接地址固定到 `10.7.0.1`。
 
 [打开一键安装页](https://nikiz24.github.io/shadowrocket-sidestore-rules/)
 
@@ -12,12 +12,27 @@
 
 1. 在 Shadowrocket 中选择**本地 `default.conf`**，全局路由设为“配置”，选择自己的有效节点。
 2. 扫上方二维码，或在 iPhone Safari 打开安装页，点击“一键导入到 Shadowrocket”，按提示安装并启用这一个模块。
-3. 在 **Shadowrocket → 设置 → 其它 → Include Route 10.7.0.1/32** 开启原生回环。不同语言/版本可能显示为“包含路由 10.7.0.1/32”。断开并重连 VPN，连接 Wi-Fi。
+3. 在 **Shadowrocket → 设置 → 其它 → Include Route 10.7.0.1/32** 开启原生回环。不同语言/版本可能显示为“包含路由 10.7.0.1/32”。模块已包含默认路由参数；启用模块后断开并重连 VPN，连接 Wi-Fi。旧模块请先手动更新。
 4. 在新版内置 SideStore 中打开 **Settings → Connection Configuration**，**关闭 Use Local VPN**；在出现的 **Remote Endpoint** 区域把 **Device IP** 填为 `10.7.0.1`，**RemotePair Port** 留空，然后点 **Confirm** 并按提示重新打开。此开关只切换 SideStore 的地址选择模式，Shadowrocket VPN 继续保持连接。
 5. 若还没配过 MITM：在当前 `default.conf` 的 `ⓘ → HTTPS 解密 → 证书`生成、安装 CA；随后在 iOS 的“证书信任设置”中信任它，并确认 HTTPS 解密已开启。**续签本身不依赖 MITM；这是额外的 HTTPS 重写功能。**
 6. 在 SideStore 中先手动 Refresh All，再断开重连 Shadowrocket、重开 LiveContainer 测试一次，确认实际连接地址没有被自动探测覆盖。成功后再设置每日快捷指令。
 
 Shadowrocket 官方在 **2.2.91 (3386) 测试版**加入原生 `10.7.0.1/32` 回环；请使用包含此功能的新版。
+
+## 模块内置默认路由和续签路由
+
+模块和生成脚本均包含下面的参数，后续规则自动更新也会保留：
+
+```ini
+[General]
+tun-included-routes = 0.0.0.0/0,10.7.0.1/32
+```
+
+`0.0.0.0/0` 保留 IPv4 互联网默认路由，`10.7.0.1/32` 保留续签地址的具体路由；原生 **Include Route 10.7.0.1/32** 开关仍需开启。模块的通用参数不会代替这个开关。启用模块并重连后，全局路由使用“配置”，分别确认 Telegram 能连接、手动运行续签快捷指令成功。
+
+2026-11-06 已实测上述参数写入**本地基础配置**后，默认路由恢复，Telegram 和手动续签快捷指令均成功。**仅由模块提供该参数的实机效果尚未单独验证。** 当前已成功的基础配置可以保留同一行作为保底，无需为更新模块而删除。
+
+若所用版本未应用模块中的路由参数，可在当前勾选的**本地基础配置 → 编辑纯文本**中，将同一行添加到已有的 `[General]` 段内，保存并重连；已有段标题时不要重复添加。包含路由不要只填 `10.7.0.1/32`。模块通用参数参与配置生效，不会把这行写入或改写本地文件；本地的 CA、DNS 和其他设置继续保留。
 
 ## SideStore 版本与固定设备地址
 
@@ -51,7 +66,7 @@ GitHub Actions 每天北京时间 **08:30**左右同步原作者的完整规则�
 
 手机端打开 `Shadowrocket → 设置 → 自动更新 → 模块`，设为每天更新，并允许 iOS 后台 App 刷新。也可以在模块列表手动更新本模块。后台调度由 iOS 决定。
 
-**更新的是这个远程模块。`default.conf` 和其中的 CA 留在本地，因此本方案无需额外的证书模块。** 请不要把本地证书配置改成会被远程覆盖的配置。
+**更新的是这个远程模块，包括其默认路由参数、分流、重写和 MITM 设置。`default.conf` 和其中的 CA 留在本地，因此本方案无需额外的证书模块。** 请不要把本地证书配置改成会被远程覆盖的配置。
 
 模块直接地址，可填入“配置 → 模块 → ＋”：
 
@@ -64,11 +79,12 @@ https://raw.githubusercontent.com/nikiz24/shadowrocket-sidestore-rules/main/Shad
 ## 功能
 
 - 沿用 Johnshall `sr_cnip_ad.conf` 的全部分流和广告规则及其顺序。
+- 内置 `tun-included-routes = 0.0.0.0/0,10.7.0.1/32`，同时提供 IPv4 默认路由与续签地址路由，不照搬上游的其他通用参数。
 - 增加 `10.7.0.1/32` DIRECT 规则。真正的本机回环由 Shadowrocket 的原生开关提供，须在手机上单独启用。
 - 开启 MITM，限定于 `g.cn,*.g.cn,google.cn,*.google.cn`，配合原版 Google CN 跳转。其他 HTTPS 内容过滤需要对应服务的重写模块。
 - 只发布公开规则，模块不含 CA 证书、私钥、Apple 账号、节点凭据。
 
-“自签”由 SideStore / 相应签名工具完成。回环开关、有效 pairing、有效签名证书/登录状态是各自独立的条件，规则模块不能提供配对文件。DNS、IP 路由等通用参数使用本地基础配置；新版模块只发布 `[Rule]`、`[URL Rewrite]`、`[MITM]`。
+“自签”由 SideStore / 相应签名工具完成。回环开关、有效 pairing、有效签名证书/登录状态是各自独立的条件，规则模块不能提供配对文件。模块发布 `[General]`、`[Rule]`、`[URL Rewrite]`、`[MITM]`；其中 `[General]` 仅预置上述包含路由，DNS、证书等其他设置由本地基础配置管理。
 
 ## 提示 pairing file is invalid or missing
 
@@ -99,9 +115,11 @@ python3 -m unittest discover -s tests -v
 python3 scripts/build.py
 ```
 
-构建信息见 [build-info.json](build-info.json)。静态检查覆盖原规则顺序、原 URL 重写、模块不冒充原生隧道设置、拒绝异常上游、CA 数据不进入发布模块。手机端实测范围见下，其他功能与版本组合需分别验证。
+构建信息见 [build-info.json](build-info.json)。静态检查覆盖原规则顺序、原 URL 重写、IPv4 默认路由与续签路由同时存在、忽略上游的隧道参数覆盖、拒绝异常上游、CA 数据不进入发布模块。原生回环仍需应用开关。手机端实测范围见下，其他功能与版本组合需分别验证。
 
 2026-11-02 的实机续签验证环境为 iOS **27.0.1**、Shadowrocket **2.2.93**、LiveContainer **3.8.11**、内置 SideStore **0.7.0-20261017.511+ee3cc16a**。Remote Endpoint 模式下 `10.7.0.1:49152` 可达、RPPairing 成功、读取 UDID 成功；重新签名后日志显示安装证书有效，普通 Refresh 成功，手动执行每日快捷指令刷新成功。**定时自动触发和锁屏执行尚未在本轮验证，需检查下一次自动化运行及到期时间。**
+
+2026-11-06 在 Shadowrocket **2.2.93 (3488)**、Telegram **13.2 (36535)** 上验证了上述默认路由修复。补充本地 `[General]` 参数后，实机隧道日志显示新增 IPv4 默认路由；用户确认“配置”模式下 Telegram 和手动执行续签快捷指令同时成功。默认路由最初缺失的原因尚未确定。此次未单独验证仅由模块提供路由，也未重新验证定时自动触发或锁屏执行。
 
 ## 来源与许可
 
@@ -117,4 +135,4 @@ python3 scripts/build.py
 - 合并版快捷指令动作：[LiveContainer 官方自动续签说明](https://livecontainer.github.io/docs/installation/lc_sidestore#auto-refresh-shortcut)。
 - 模块与安装协议：[Shadowrocket 社区手册](https://github.com/LOWERTOP/Shadowrocket/wiki)。
 
-在上游规则上增加本机地址 DIRECT 规则与 MITM 设置，并以远程模块交付。修改日期：2026-11-02。派生配置和生成脚本按 CC BY-SA 4.0 提供，见 [LICENSE](LICENSE)。
+在上游规则上增加本机地址 DIRECT 规则与 MITM 设置，并以远程模块交付。修改日期：2026-11-06。派生配置和生成脚本按 CC BY-SA 4.0 提供，见 [LICENSE](LICENSE)。
