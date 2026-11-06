@@ -1,6 +1,6 @@
 # Shadowrocket：分流、去广告和 MITM 模块，配合 SideStore 续签
 
-本项目的续签通路只使用 **Shadowrocket**。完整配置包含：原生 `Include Route 10.7.0.1/32` 开关、SideStore 的有效配对文件，以及固定到 `10.7.0.1` 的实际设备连接地址。导入规则模块本身不会设置这三项。
+本项目的续签通路只使用 **Shadowrocket**。完整配置包含：保留互联网默认路由的本地基础配置、原生 `Include Route 10.7.0.1/32` 开关、SideStore 的有效配对文件，以及固定到 `10.7.0.1` 的实际设备连接地址。这些需要在手机上分别配置，导入规则模块不会自动完成。
 
 [打开一键安装页](https://nikiz24.github.io/shadowrocket-sidestore-rules/)
 
@@ -12,12 +12,27 @@
 
 1. 在 Shadowrocket 中选择**本地 `default.conf`**，全局路由设为“配置”，选择自己的有效节点。
 2. 扫上方二维码，或在 iPhone Safari 打开安装页，点击“一键导入到 Shadowrocket”，按提示安装并启用这一个模块。
-3. 在 **Shadowrocket → 设置 → 其它 → Include Route 10.7.0.1/32** 开启原生回环。不同语言/版本可能显示为“包含路由 10.7.0.1/32”。断开并重连 VPN，连接 Wi-Fi。
+3. 在 **Shadowrocket → 设置 → 其它 → Include Route 10.7.0.1/32** 开启原生回环。不同语言/版本可能显示为“包含路由 10.7.0.1/32”。同时按下节在本地基础配置中保留默认路由，保存后断开并重连 VPN，连接 Wi-Fi。
 4. 在新版内置 SideStore 中打开 **Settings → Connection Configuration**，**关闭 Use Local VPN**；在出现的 **Remote Endpoint** 区域把 **Device IP** 填为 `10.7.0.1`，**RemotePair Port** 留空，然后点 **Confirm** 并按提示重新打开。此开关只切换 SideStore 的地址选择模式，Shadowrocket VPN 继续保持连接。
 5. 若还没配过 MITM：在当前 `default.conf` 的 `ⓘ → HTTPS 解密 → 证书`生成、安装 CA；随后在 iOS 的“证书信任设置”中信任它，并确认 HTTPS 解密已开启。**续签本身不依赖 MITM；这是额外的 HTTPS 重写功能。**
 6. 在 SideStore 中先手动 Refresh All，再断开重连 Shadowrocket、重开 LiveContainer 测试一次，确认实际连接地址没有被自动探测覆盖。成功后再设置每日快捷指令。
 
 Shadowrocket 官方在 **2.2.91 (3386) 测试版**加入原生 `10.7.0.1/32` 回环；请使用包含此功能的新版。
+
+## 保留默认路由和续签回环
+
+在 Shadowrocket 的“配置”页打开当前勾选的**本地基础配置 → 编辑纯文本**，在已有的 `[General]` 段内添加或修改这一行。已有该段时不要重复添加段标题：
+
+```ini
+[General]
+tun-included-routes = 0.0.0.0/0,10.7.0.1/32
+```
+
+`0.0.0.0/0` 保留 IPv4 互联网默认路由，`10.7.0.1/32` 保留续签地址的具体路由；原生 **Include Route 10.7.0.1/32** 开关仍需开启。不要把包含路由仅设成 `10.7.0.1/32`。保存并重连后，全局路由使用“配置”，分别确认 Telegram 能连接、手动运行续签快捷指令成功。
+
+2026-11-06 的实机排查中，Telegram 一直“连接中”，切到全局代理也没有恢复。实际隧道配置缺少 IPv4 默认路由，虽然已有 Telegram 代理规则，其真实 IP 流量仍未被正常接管。兼容模式已关闭、代理类型为 None，当前基础配置原先也没有 `tun-included-routes`。添加上述配置后，日志确认 IPv4 默认路由恢复；切回“配置”后，用户确认 Telegram 和续签快捷指令均成功。尚未确定应用最初为何省略默认路由，不能据此认定是回环开关或旧配置导致。
+
+这行属于**本地基础配置**，请保留其中已有的 CA 和其他设置。本项目的远程模块只更新规则、重写与 MITM 设置，不会替你修改 `[General]`，更新模块本身也不会补上这行。
 
 ## SideStore 版本与固定设备地址
 
@@ -103,6 +118,8 @@ python3 scripts/build.py
 
 2026-11-02 的实机续签验证环境为 iOS **27.0.1**、Shadowrocket **2.2.93**、LiveContainer **3.8.11**、内置 SideStore **0.7.0-20261017.511+ee3cc16a**。Remote Endpoint 模式下 `10.7.0.1:49152` 可达、RPPairing 成功、读取 UDID 成功；重新签名后日志显示安装证书有效，普通 Refresh 成功，手动执行每日快捷指令刷新成功。**定时自动触发和锁屏执行尚未在本轮验证，需检查下一次自动化运行及到期时间。**
 
+2026-11-06 在 Shadowrocket **2.2.93 (3488)**、Telegram **13.2 (36535)** 上验证了上述默认路由修复。补充本地 `[General]` 参数后，实机隧道日志显示新增 IPv4 默认路由；用户确认“配置”模式下 Telegram 和手动执行续签快捷指令同时成功。此次未重新验证定时自动触发或锁屏执行。
+
 ## 来源与许可
 
 - 原始规则：[Moshel / Johnshall](https://github.com/Johnshall/Shadowrocket-ADBlock-Rules-Forever/blob/release/sr_cnip_ad.conf)，CC BY-SA 4.0。
@@ -117,4 +134,4 @@ python3 scripts/build.py
 - 合并版快捷指令动作：[LiveContainer 官方自动续签说明](https://livecontainer.github.io/docs/installation/lc_sidestore#auto-refresh-shortcut)。
 - 模块与安装协议：[Shadowrocket 社区手册](https://github.com/LOWERTOP/Shadowrocket/wiki)。
 
-在上游规则上增加本机地址 DIRECT 规则与 MITM 设置，并以远程模块交付。修改日期：2026-11-02。派生配置和生成脚本按 CC BY-SA 4.0 提供，见 [LICENSE](LICENSE)。
+在上游规则上增加本机地址 DIRECT 规则与 MITM 设置，并以远程模块交付。修改日期：2026-11-06。派生配置和生成脚本按 CC BY-SA 4.0 提供，见 [LICENSE](LICENSE)。
