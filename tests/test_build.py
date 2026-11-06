@@ -32,12 +32,26 @@ class BuildTest(unittest.TestCase):
         self.assertEqual([s for s in new["URL Rewrite"] if s.strip()], [s for s in old["URL Rewrite"] if s.strip()])
         self.assertEqual(metadata["module_rules"], 1004)
 
-    def test_module_does_not_claim_to_configure_native_tunnel(self):
+    def test_module_includes_default_route_and_still_requires_native_loopback(self):
         module, _ = builder.build(fixture())
-        self.assertEqual(set(builder.sections(module)), {"Rule", "URL Rewrite", "MITM"})
-        self.assertNotIn("tun-included-routes =", module)
+        output = builder.sections(module)
+        self.assertEqual(set(output), {"General", "Rule", "URL Rewrite", "MITM"})
+        self.assertEqual(builder.active_rules(output["General"]), [
+            "tun-included-routes = 0.0.0.0/0,10.7.0.1/32",
+        ])
         self.assertNotIn("tun-excluded-routes =", module)
         self.assertIn("manually enable Shadowrocket Settings > Other > Include Route 10.7.0.1/32", module)
+
+    def test_upstream_tunnel_settings_cannot_remove_default_route(self):
+        text = fixture().replace("dns-server = system", "\n".join([
+            "dns-server = system", "tun-included-routes = 10.7.0.1/32",
+            "compatibility-mode = 5", "tun-excluded-routes = 0.0.0.0/0",
+        ]))
+        module, _ = builder.build(text)
+        self.assertEqual(builder.active_rules(builder.sections(module)["General"]), [
+            "tun-included-routes = 0.0.0.0/0,10.7.0.1/32",
+        ])
+        self.assertNotIn("compatibility-mode =", module)
 
     def test_module_leaves_certificate_and_base_config_local(self):
         module, _ = builder.build(fixture().replace("dns-server = system", "dns-server = system\nupdate-url = https://example.org/base.conf"))
@@ -45,6 +59,7 @@ class BuildTest(unittest.TestCase):
         self.assertNotIn("ca-passphrase =", module)
         self.assertNotIn("EXAMPLE_UPSTREAM", module)
         self.assertNotIn("update-url =", module)
+        self.assertNotIn("dns-server =", module)
         self.assertIn("enable = true", module)
         self.assertIn("hostname = g.cn,*.g.cn,google.cn,*.google.cn", module)
 
