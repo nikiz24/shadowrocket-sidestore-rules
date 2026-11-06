@@ -30,20 +30,20 @@
     <ol>
       <li>在 Shadowrocket 选择本地 <strong>default.conf</strong>，全局路由设为“配置”。</li>
       <li>点击上方按钮，安装并启用模块。</li>
-      <li>为 SideStore 续签：到 Shadowrocket“设置 → 其它”，开启 <strong>Include Route 10.7.0.1/32</strong>；同时按下方说明在本地基础配置中<strong>保留默认路由</strong>，保存后断开重连 VPN。续签时连接 Wi-Fi。</li>
+      <li>为 SideStore 续签：到 Shadowrocket“设置 → 其它”，开启 <strong>Include Route 10.7.0.1/32</strong>。模块已内置默认路由参数；启用后断开重连 VPN。旧模块请先手动更新，续签时连接 Wi-Fi。</li>
       <li>在新版内置 SideStore“Settings → Connection Configuration”中，<strong>关闭 Use Local VPN</strong>，在 <strong>Remote Endpoint → Device IP</strong> 填入 <strong>10.7.0.1</strong>，RemotePair Port 留空，点击 Confirm。此处只切换 SideStore 的连接模式，Shadowrocket 继续连接。</li>
       <li>为 HTTPS 重写：在当前配置的“HTTPS 解密”里生成、安装 CA，再到 iOS 的“证书信任设置”中信任它。这一步与续签独立。</li>
     </ol>
     <p class="note">旧合并版可能自动连到 198.18.0.2，且没有可编辑的设备地址。官方 Nightly 合并版 LiveContainer 3.8.11 / SideStore 0.7.0 提供上述设置。其本机 VPN 自动识别仍可能清空端点，因此这里使用 Remote Endpoint。升级前请备份数据，再分别测试手动刷新与重连后的刷新。</p>
   </section>
   <section>
-    <h2>保留默认路由，兼顾 TG 和续签</h2>
-    <p>在“配置”页打开当前勾选的本地基础配置 → 编辑纯文本，在已有的 [General] 段内添加或修改下面这一行；已有段标题时不要重复添加：</p>
+    <h2>模块内置路由，兼顾 TG 和续签</h2>
+    <p>模块已包含下面的参数，后续规则更新也会保留：</p>
     <pre><code>[General]
 tun-included-routes = 0.0.0.0/0,10.7.0.1/32</code></pre>
-    <p>0.0.0.0/0 保留 IPv4 互联网默认路由，10.7.0.1/32 保留续签地址的具体路由。原生 <strong>Include Route 10.7.0.1/32</strong> 开关继续开启。保存并重连 VPN，全局路由使用“配置”。</p>
-    <p class="note">2026-11-06 实测：TG 一直“连接中”、全局代理也无效时，日志显示默认路由缺失。补上这一行后默认路由恢复，用户确认“配置”模式下 TG 和续签快捷指令都成功。尚未确定应用最初省略默认路由的原因。</p>
-    <p class="note">这是本地基础配置的设置。只更新模块不会自动补上这行；请保留原有 CA 和其他设置，包含路由不要只填 10.7.0.1/32。</p>
+    <p>0.0.0.0/0 保留 IPv4 互联网默认路由，10.7.0.1/32 保留续签地址的具体路由。原生 <strong>Include Route 10.7.0.1/32</strong> 开关仍需开启。启用模块后重连 VPN，全局路由使用“配置”，测试 TG 和续签。</p>
+    <p class="note">2026-11-06 已实测将该参数写入本地基础配置后，默认路由恢复，TG 和手动续签快捷指令均成功。仅由模块提供路由的实机效果尚未单独验证，现有已成功的基础配置可保留同一行作为保底。</p>
+    <p class="note">若所用版本未应用模块路由，可在当前本地基础配置 → 编辑纯文本，把同一行加到已有的 [General] 段，保存并重连。不要重复添加段标题，包含路由不要只填 10.7.0.1/32。本地原有 CA 和其他设置继续保留。</p>
   </section>
   <section>
     <h2>每日自动续签</h2>
@@ -64,7 +64,7 @@ tun-included-routes = 0.0.0.0/0,10.7.0.1/32</code></pre>
   </section>
   <section>
     <h2>规则自动更新</h2>
-    <p>在 Shadowrocket 的“设置 → 自动更新 → 模块”中选择每天更新，并允许后台 App 刷新。证书随本地 default.conf 保留。</p>
+    <p>在 Shadowrocket 的“设置 → 自动更新 → 模块”中选择每天更新，并允许后台 App 刷新。默认路由参数和规则一起更新，证书随本地 default.conf 保留。</p>
     <p class="note">MITM 默认作用于 Google CN 跳转域名。IPA 的签名、配对与刷新由你使用的 SideStore / 签名工具完成。</p>
   </section>
   <details>

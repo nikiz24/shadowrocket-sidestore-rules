@@ -1,5 +1,5 @@
 #!name=CNIP AdBlock + SideStore + MITM
-#!desc=Johnshall CNIP/ad-block rules and scoped MITM. For SideStore, separately enable Settings > Other > Include Route 10.7.0.1/32 in Shadowrocket and import a valid pairing file in SideStore. Keep your CA in a LOCAL base config.
+#!desc=Johnshall CNIP/ad-block rules, IPv4 default/SideStore routes and scoped MITM. Separately enable Settings > Other > Include Route 10.7.0.1/32 and import valid SideStore pairing credentials. Keep your CA in a LOCAL base config.
 #!homepage=https://github.com/nikiz24/shadowrocket-sidestore-rules
 # Original rules: Moshel / Johnshall, CC BY-SA 4.0.
 # Source: https://raw.githubusercontent.com/Johnshall/Shadowrocket-ADBlock-Rules-Forever/release/sr_cnip_ad.conf
@@ -7,9 +7,13 @@
 # Requires a Shadowrocket build with native 10.7.0.1/32 loopback support.
 # REQUIRED: manually enable Shadowrocket Settings > Other > Include Route 10.7.0.1/32.
 # A module cannot supply SideStore pairing credentials or the native loopback switch.
-# General/profile options are intentionally omitted: module parsing is not runtime proof.
+# General includes IPv4 default and SideStore routes; it does not enable native loopback.
+# If module routing is not applied by your build, keep the same routes in the local base config.
 # This module intentionally contains no CA certificate/private key.
 
+
+[General]
+tun-included-routes = 0.0.0.0/0,10.7.0.1/32
 
 [Rule]
 IP-CIDR,10.7.0.1/32,DIRECT,no-resolve
