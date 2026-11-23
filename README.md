@@ -1,6 +1,8 @@
-# Shadowrocket：分流、去广告和 MITM 模块，配合 SideStore 续签
+# Shadowrocket：分流、去广告、MITM 与 SideStore 续签完整配置
 
-本项目的续签通路只使用 **Shadowrocket**。模块内置 IPv4 互联网默认路由、续签地址路由以及分流、去广告和 MITM 设置。手机上仍需单独开启原生 `Include Route 10.7.0.1/32` 开关，为 SideStore 导入有效配对文件，并把实际设备连接地址固定到 `10.7.0.1`。
+推荐直接导入 **[Shadowrocket-SideStore.conf](Shadowrocket-SideStore.conf)**：IPv4 默认路由、续签地址路由、完整分流和去广告规则、Google CN HTTPS 重写都在这一份配置里，**不需要另外安装规则模块**。GitHub Actions 每天同步上游，重新生成完整配置，持续保留我们的路由修复。
+
+手机上仍需开启原生 `Include Route 10.7.0.1/32`，为 SideStore 导入有效配对文件，并将实际设备连接地址固定为 `10.7.0.1`。这些不能通过公开配置自动完成。
 
 [打开一键安装页](https://nikiz24.github.io/shadowrocket-sidestore-rules/)
 
@@ -10,29 +12,40 @@
 
 ## 使用
 
-1. 在 Shadowrocket 中选择**本地 `default.conf`**，全局路由设为“配置”，选择自己的有效节点。
-2. 扫上方二维码，或在 iPhone Safari 打开安装页，点击“一键导入到 Shadowrocket”，按提示安装并启用这一个模块。
-3. 在 **Shadowrocket → 设置 → 其它 → Include Route 10.7.0.1/32** 开启原生回环。不同语言/版本可能显示为“包含路由 10.7.0.1/32”。模块已包含默认路由参数；启用模块后断开并重连 VPN，连接 Wi-Fi。旧模块请先手动更新。
+1. 在 iPhone Safari 打开安装页，点击“一键导入完整配置”，或扫描二维码，下载 **Shadowrocket-SideStore.conf**，点选“使用配置”。
+2. 全局路由选择“配置”，选择自己的有效节点。若用过旧版 **Shadowrocket-SideStore.sgmodule** 或早期增强模块，请先停用，避免其优先级覆盖完整配置；原有成功配置可留作备份。
+3. 在 **Shadowrocket → 设置 → 其它 → Include Route 10.7.0.1/32** 开启原生回环。不同语言/版本可能显示为“包含路由 10.7.0.1/32”。配置已包含默认路由参数，保存后断开并重连 VPN，连接 Wi-Fi。
 4. 在新版内置 SideStore 中打开 **Settings → Connection Configuration**，**关闭 Use Local VPN**；在出现的 **Remote Endpoint** 区域把 **Device IP** 填为 `10.7.0.1`，**RemotePair Port** 留空，然后点 **Confirm** 并按提示重新打开。此开关只切换 SideStore 的地址选择模式，Shadowrocket VPN 继续保持连接。
-5. 若还没配过 MITM：在当前 `default.conf` 的 `ⓘ → HTTPS 解密 → 证书`生成、安装 CA；随后在 iOS 的“证书信任设置”中信任它，并确认 HTTPS 解密已开启。**续签本身不依赖 MITM；这是额外的 HTTPS 重写功能。**
+5. 需要 MITM 时按下节先创建**本地扩展配置**，将 CA 留在本地，避免远程更新覆盖证书。**续签本身不依赖 MITM；它用于额外的 HTTPS 重写功能。**
 6. 在 SideStore 中先手动 Refresh All，再断开重连 Shadowrocket、重开 LiveContainer 测试一次，确认实际连接地址没有被自动探测覆盖。成功后再设置每日快捷指令。
 
 Shadowrocket 官方在 **2.2.91 (3386) 测试版**加入原生 `10.7.0.1/32` 回环；请使用包含此功能的新版。
 
-## 模块内置默认路由和续签路由
+## 默认路由与续签路由
 
-模块和生成脚本均包含下面的参数，后续规则自动更新也会保留：
+完整配置和生成脚本均包含下面的参数，每日同步上游时也会保留：
 
 ```ini
 [General]
 tun-included-routes = 0.0.0.0/0,10.7.0.1/32
 ```
 
-`0.0.0.0/0` 保留 IPv4 互联网默认路由，`10.7.0.1/32` 保留续签地址的具体路由；原生 **Include Route 10.7.0.1/32** 开关仍需开启。模块的通用参数不会代替这个开关。启用模块并重连后，全局路由使用“配置”，分别确认 Telegram 能连接、手动运行续签快捷指令成功。
+`0.0.0.0/0` 保留 IPv4 互联网默认路由，`10.7.0.1/32` 保留续签地址的具体路由；原生 **Include Route 10.7.0.1/32** 开关仍需开启。配置参数不能代替这个开关。使用配置并重连后，分别确认 Telegram 能连接、手动运行续签快捷指令成功。
 
-2026-11-06 已实测上述参数写入**本地基础配置**后，默认路由恢复，Telegram 和手动续签快捷指令均成功。**仅由模块提供该参数的实机效果尚未单独验证。** 当前已成功的基础配置可以保留同一行作为保底，无需为更新模块而删除。
+2026-11-06 已实测上述参数写入当前配置后，隧道默认路由恢复，“配置”模式下 Telegram 和手动续签快捷指令均成功。新生成的完整配置采用相同的路由参数；切换到完整配置后的首次导入、定时更新及 MITM 证书保留仍需在手机验证。
 
-若所用版本未应用模块中的路由参数，可在当前勾选的**本地基础配置 → 编辑纯文本**中，将同一行添加到已有的 `[General]` 段内，保存并重连；已有段标题时不要重复添加。包含路由不要只填 `10.7.0.1/32`。模块通用参数参与配置生效，不会把这行写入或改写本地文件；本地的 CA、DNS 和其他设置继续保留。
+完整配置使用系统 DNS，默认关闭 IPv6，保留局域网兼容参数；不直接复制上游的 DNS、包含路由或旁路参数。包含路由不要只填 `10.7.0.1/32`。
+
+## MITM 证书保留在本地
+
+远程“更新配置”会覆盖配置文件中的本地修改。需要 MITM 且要持续自动更新规则时，使用 Shadowrocket 的**扩展配置 / 包含配置**功能，无需证书模块：
+
+1. 导入远程 **Shadowrocket-SideStore.conf** 后，点击它 → **扩展配置**，新建本地配置，例如 **SideStore-Local.conf**。
+2. 在本地扩展配置的 `ⓘ → 通用 → 包含配置` 中，确认包含的是刚导入的远程完整配置；本地扩展配置不设置 `update-url`。
+3. 在**本地扩展配置**的 `ⓘ → HTTPS 解密 → 证书` 中粘贴已有证书，或生成、安装 CA，再到 iOS“证书信任设置”中信任它。证书复制粘贴均在手机本地完成。
+4. 选择本地扩展配置作为当前配置。远程原配置负责路由、规则与重写，本地扩展配置只保存 CA 和个人覆写。
+
+之后更新远程原配置，保留本地扩展文件。此方案基于 Shadowrocket 的包含配置能力；首次设置后请手动更新一次远程原配置，重新使用本地扩展配置，检查证书、TG 和续签是否仍正常。不要把含 CA 私钥的本地扩展文件提交到本仓库。
 
 ## SideStore 版本与固定设备地址
 
@@ -56,35 +69,37 @@ LiveContainer → 刷新所有 App / Refresh All Apps
 
 先手动运行并确认 SideStore 的到期时间更新，再为这个快捷指令添加“特定时间 → 每天 → 立即运行”自动化。合并版需使用 **LiveContainer** 提供的刷新动作。最后测试一次锁屏运行，并检查第二天的结果；创建自动化不代表每次后台执行都会成功。
 
-这里每日执行的是 IPA 续签；下面的模块自动更新负责规则同步，两者分别配置。
+这里每日执行的是 IPA 续签；下面的配置自动更新负责规则同步，两者分别配置。
 
-如果之前导入过旧版多文件方案，切回本地 `default.conf`，停用旧增强模块与证书模块，再按上述步骤配置。其他已启用模块也可能影响最终规则和 MITM 主机名，排查时先停用有重叠功能的模块。
+从旧版迁移时，导入完整配置并停用旧规则模块，按需将已有 CA 复制到本地扩展配置。其他已启用模块也可能覆盖最终规则和 MITM 主机名，排查时先停用有重叠功能的模块。
 
 ## 规则更新
 
-GitHub Actions 每天北京时间 **08:30**左右同步原作者的完整规则；GitHub 调度可能延后。上游下载失败或结构异常时，保留现有版本。
+GitHub Actions 每天北京时间 **08:30**左右同步原作者的完整规则，生成 **Shadowrocket-SideStore.conf**；GitHub 调度可能延后。上游下载失败或结构异常时，保留现有版本。默认路由、本机续签规则和 MITM 范围由我们的生成器固定保留。
 
-手机端打开 `Shadowrocket → 设置 → 自动更新 → 模块`，设为每天更新，并允许 iOS 后台 App 刷新。也可以在模块列表手动更新本模块。后台调度由 iOS 决定。
+手机端打开 `Shadowrocket → 设置 → 自动更新 → 配置`，启用自动后台更新，间隔设为 **1 天**，并允许 iOS 后台 App 刷新；部分版本的入口直接显示为“设置 → 配置”。首次先点击远程完整配置 → **更新配置**。使用本地扩展配置时，检查远程原配置的更新时间；若未随后台刷新，手动更新远程原配置后重新使用本地扩展配置。该组合的后台调度仍需实机确认。
 
-**更新的是这个远程模块，包括其默认路由参数、分流、重写和 MITM 设置。`default.conf` 和其中的 CA 留在本地，因此本方案无需额外的证书模块。** 请不要把本地证书配置改成会被远程覆盖的配置。
+完整配置的 `update-url` 指向本仓库自己生成的文件。**GitHub 的每日同步和手机拉取配置是两步；不能只开启仓库定时任务而不更新手机配置。** 不使用 MITM 时可以直接使用远程完整配置；使用 MITM 时按上节保留本地扩展配置。
 
-模块直接地址，可填入“配置 → 模块 → ＋”：
+完整配置地址，可填入“配置 → ＋”：
 
 ```text
-https://raw.githubusercontent.com/nikiz24/shadowrocket-sidestore-rules/main/Shadowrocket-SideStore.sgmodule
+https://raw.githubusercontent.com/nikiz24/shadowrocket-sidestore-rules/main/Shadowrocket-SideStore.conf
 ```
 
-安装链接语法为 `shadowrocket://install?module=` 加 URL 编码后的上方地址。GitHub 的 Markdown 页面可能不允许直接打开自定义协议，安装页提供实际按钮，二维码也直接编码此安装链接。
+安装链接使用 `shadowrocket://config/add/` 加上方地址。GitHub Markdown 可能不允许打开自定义协议，安装页提供实际按钮，二维码也编码完整配置安装链接。
+
+旧版 `.sgmodule` 地址继续随定时任务更新，以兼容已安装的用户；新安装和本次迁移只需完整 `.conf`，不用安装该模块。
 
 ## 功能
 
 - 沿用 Johnshall `sr_cnip_ad.conf` 的全部分流和广告规则及其顺序。
-- 内置 `tun-included-routes = 0.0.0.0/0,10.7.0.1/32`，同时提供 IPv4 默认路由与续签地址路由，不照搬上游的其他通用参数。
+- 完整配置内置 `tun-included-routes = 0.0.0.0/0,10.7.0.1/32`，同时提供 IPv4 默认路由与续签地址路由。
 - 增加 `10.7.0.1/32` DIRECT 规则。真正的本机回环由 Shadowrocket 的原生开关提供，须在手机上单独启用。
 - 开启 MITM，限定于 `g.cn,*.g.cn,google.cn,*.google.cn`，配合原版 Google CN 跳转。其他 HTTPS 内容过滤需要对应服务的重写模块。
-- 只发布公开规则，模块不含 CA 证书、私钥、Apple 账号、节点凭据。
+- 只发布公开配置和规则，不含 CA 证书、私钥、Apple 账号、节点凭据。
 
-“自签”由 SideStore / 相应签名工具完成。回环开关、有效 pairing、有效签名证书/登录状态是各自独立的条件，规则模块不能提供配对文件。模块发布 `[General]`、`[Rule]`、`[URL Rewrite]`、`[MITM]`；其中 `[General]` 仅预置上述包含路由，DNS、证书等其他设置由本地基础配置管理。
+“自签”由 SideStore / 相应签名工具完成。回环开关、有效 pairing、有效签名证书/登录状态是各自独立的条件，公开配置不能提供配对文件。完整配置包含 `[General]`、`[Rule]`、`[URL Rewrite]`、`[MITM]`，原生路由参数不再依赖模块加载。
 
 ## 提示 pairing file is invalid or missing
 
@@ -115,7 +130,7 @@ python3 -m unittest discover -s tests -v
 python3 scripts/build.py
 ```
 
-构建信息见 [build-info.json](build-info.json)。静态检查覆盖原规则顺序、原 URL 重写、IPv4 默认路由与续签路由同时存在、忽略上游的隧道参数覆盖、拒绝异常上游、CA 数据不进入发布模块。原生回环仍需应用开关。手机端实测范围见下，其他功能与版本组合需分别验证。
+构建信息见 [build-info.json](build-info.json)。静态检查覆盖完整配置更新地址、原规则顺序、原 URL 重写、IPv4 默认路由与续签路由同时存在、忽略上游私有/隧道参数、CA 数据隔离，以及异常上游时保留已发布文件。原生回环仍需应用开关。手机端实测范围见下，其他功能与版本组合需分别验证。
 
 2026-11-02 的实机续签验证环境为 iOS **27.0.1**、Shadowrocket **2.2.93**、LiveContainer **3.8.11**、内置 SideStore **0.7.0-20261017.511+ee3cc16a**。Remote Endpoint 模式下 `10.7.0.1:49152` 可达、RPPairing 成功、读取 UDID 成功；重新签名后日志显示安装证书有效，普通 Refresh 成功，手动执行每日快捷指令刷新成功。**定时自动触发和锁屏执行尚未在本轮验证，需检查下一次自动化运行及到期时间。**
 
@@ -135,4 +150,4 @@ python3 scripts/build.py
 - 合并版快捷指令动作：[LiveContainer 官方自动续签说明](https://livecontainer.github.io/docs/installation/lc_sidestore#auto-refresh-shortcut)。
 - 模块与安装协议：[Shadowrocket 社区手册](https://github.com/LOWERTOP/Shadowrocket/wiki)。
 
-在上游规则上增加本机地址 DIRECT 规则与 MITM 设置，并以远程模块交付。修改日期：2026-11-06。派生配置和生成脚本按 CC BY-SA 4.0 提供，见 [LICENSE](LICENSE)。
+在上游规则上增加 IPv4 默认路由、本机地址 DIRECT 规则与 MITM 设置，以完整远程配置交付，并保留旧模块兼容地址。修改日期：2026-11-23。派生配置和生成脚本按 CC BY-SA 4.0 提供，见 [LICENSE](LICENSE)。

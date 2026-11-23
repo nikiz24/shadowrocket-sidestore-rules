@@ -1,5 +1,8 @@
 import importlib.util
 from pathlib import Path
+import subprocess
+import sys
+import tempfile
 import unittest
 
 spec = importlib.util.spec_from_file_location("builder", Path(__file__).resolve().parents[1] / "scripts/build.py")
@@ -71,6 +74,52 @@ class BuildTest(unittest.TestCase):
     def test_unsupported_rule_requires_review(self):
         with self.assertRaises(ValueError):
             builder.build(fixture().replace("DOMAIN-SUFFIX,example.org,Proxy", "SCRIPT,unexpected,PROXY"))
+
+    def test_complete_profile_has_own_update_url_and_all_rules(self):
+        text = fixture().replace("dns-server = system", "\n".join([
+            "dns-server = https://untrusted.example/dns-query",
+            "update-url = https://untrusted.example/profile.conf",
+            "include = private.conf", "tun-included-routes = 10.7.0.1/32",
+            "compatibility-mode = 5",
+        ]))
+        config, metadata = builder.build(text, full_config=True)
+        output = builder.sections(config)
+        self.assertEqual(set(output), {"General", "Rule", "URL Rewrite", "MITM"})
+        self.assertIn("update-url = " + builder.CONFIG_URL, output["General"])
+        self.assertIn("tun-included-routes = 0.0.0.0/0,10.7.0.1/32", output["General"])
+        self.assertIn("dns-server = system", output["General"])
+        self.assertNotIn("untrusted.example", config)
+        self.assertNotIn("private.conf", config)
+        self.assertNotIn("EXAMPLE_UPSTREAM", config)
+        self.assertNotIn("ca-p12 =", config)
+        self.assertNotIn("ca-passphrase =", config)
+        self.assertNotIn("compatibility-mode =", config)
+        self.assertNotIn(".sgmodule", config)
+        source = builder.sections(text)
+        self.assertEqual(builder.active_rules(output["Rule"])[1:], builder.active_rules(source["Rule"]))
+        self.assertEqual(builder.active_rules(output["URL Rewrite"]), builder.active_rules(source["URL Rewrite"]))
+        self.assertEqual(metadata["config_rules"], 1004)
+
+    def test_cli_writes_both_outputs_and_keeps_them_on_bad_upstream(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "source.conf"
+            output = root / "published"
+            source.write_text(fixture())
+            command = [sys.executable, str(Path(builder.__file__)),
+                       "--source-file", str(source), "--output-dir", str(output)]
+            subprocess.run(command, check=True, capture_output=True)
+            saved = {p.name: p.read_bytes() for p in output.iterdir()}
+            self.assertEqual(set(saved), {builder.CONFIG_NAME, builder.MODULE_NAME, "build-info.json"})
+            import hashlib
+            import json
+            info = json.loads(saved["build-info.json"])
+            self.assertEqual(info["config_sha256"], hashlib.sha256(saved[builder.CONFIG_NAME]).hexdigest())
+            self.assertEqual(info["module_sha256"], hashlib.sha256(saved[builder.MODULE_NAME]).hexdigest())
+            source.write_text("<html>Upstream unavailable</html>")
+            result = subprocess.run(command, capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(saved, {p.name: p.read_bytes() for p in output.iterdir()})
 
 
 if __name__ == "__main__":
