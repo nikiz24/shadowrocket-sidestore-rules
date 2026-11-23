@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build one updateable Shadowrocket module from Johnshall's release config."""
+"""Build a complete Shadowrocket profile and a legacy compatibility module."""
 import argparse
 import hashlib
 import json
@@ -9,6 +9,9 @@ from urllib.request import Request, urlopen
 
 UPSTREAM = "https://raw.githubusercontent.com/Johnshall/Shadowrocket-ADBlock-Rules-Forever/release/sr_cnip_ad.conf"
 MODULE_NAME = "Shadowrocket-SideStore.sgmodule"
+CONFIG_NAME = "Shadowrocket-SideStore.conf"
+CONFIG_URL = "https://raw.githubusercontent.com/nikiz24/shadowrocket-sidestore-rules/main/" + CONFIG_NAME
+TUN_INCLUDED_ROUTES = "0.0.0.0/0,10.7.0.1/32"
 RULE_TYPES = {"DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD", "IP-CIDR", "IP-CIDR6", "GEOIP", "FINAL"}
 
 
@@ -32,7 +35,7 @@ def active_rules(lines):
             if line.strip() and not line.lstrip().startswith("#")]
 
 
-def build(text):
+def build(text, *, full_config=False):
     source = sections(text)
     if set(source) != {"General", "Rule", "URL Rewrite", "MITM"}:
         raise ValueError("Upstream sections changed; review before publishing")
@@ -47,32 +50,46 @@ def build(text):
     upstream_build = upstream_build[1] if upstream_build else "unknown"
     header = [
         "#!name=CNIP AdBlock + SideStore + MITM",
-        "#!desc=Johnshall CNIP/ad-block rules and scoped MITM. For SideStore, separately enable Settings > Other > Include Route 10.7.0.1/32 in Shadowrocket and import a valid pairing file in SideStore. Keep your CA in a LOCAL base config.",
+        "#!desc=Johnshall rules with IPv4 default/SideStore routes and scoped MITM. Separately enable native Include Route 10.7.0.1/32 and configure SideStore pairing. Keep your CA in a local extended profile when updating remotely.",
         "#!homepage=https://github.com/nikiz24/shadowrocket-sidestore-rules",
         "# Original rules: Moshel / Johnshall, CC BY-SA 4.0.",
         "# Source: " + UPSTREAM,
         "# Upstream build: " + upstream_build,
         "# Requires a Shadowrocket build with native 10.7.0.1/32 loopback support.",
         "# REQUIRED: manually enable Shadowrocket Settings > Other > Include Route 10.7.0.1/32.",
-        "# A module cannot supply SideStore pairing credentials or the native loopback switch.",
-        "# General/profile options are intentionally omitted: module parsing is not runtime proof.",
-        "# This module intentionally contains no CA certificate/private key.",
+        "# Neither profiles nor modules can supply pairing credentials or the native loopback switch.",
+        "# General includes IPv4 default and SideStore routes; it does not enable native loopback.",
+        "# This file intentionally contains no CA certificate/private key or proxy credentials.",
+        "# For MITM with remote updates, extend this profile locally and keep the CA there.",
         "",
     ]
     body = header
+    body += ["", "[General]"]
+    if full_config:
+        body += [
+            "ipv6 = false",
+            "prefer-ipv6 = false",
+            "bypass-system = true",
+            "skip-proxy = 192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,localhost,*.local",
+            "dns-server = system",
+            "update-url = " + CONFIG_URL,
+        ]
+    body += ["tun-included-routes = " + TUN_INCLUDED_ROUTES]
     body += ["", "[Rule]", "IP-CIDR,10.7.0.1/32,DIRECT,no-resolve"] + source["Rule"]
     body += ["", "[URL Rewrite]"] + source["URL Rewrite"]
     body += ["", "[MITM]", "enable = true", "hostname = g.cn,*.g.cn,google.cn,*.google.cn", ""]
     module = "\n".join(body)
-    if re.search(r"(?mi)^\s*ca-(?:p12|passphrase)\s*=|^\s*update-url\s*=", module):
-        raise ValueError("Module must not publish CA data or replace its base config")
+    if re.search(r"(?mi)^\s*ca-(?:p12|passphrase)\s*=", module):
+        raise ValueError("Published files must not contain CA data")
+    if not full_config and re.search(r"(?mi)^\s*update-url\s*=", module):
+        raise ValueError("Module must not replace its base config")
     metadata = {
         "source": UPSTREAM,
         "upstream_build": upstream_build,
         "upstream_sha256": hashlib.sha256(text.encode()).hexdigest(),
-        "module_sha256": hashlib.sha256(module.encode()).hexdigest(),
+        ("config_sha256" if full_config else "module_sha256"): hashlib.sha256(module.encode()).hexdigest(),
         "upstream_rules": len(rules),
-        "module_rules": len(rules) + 1,
+        ("config_rules" if full_config else "module_rules"): len(rules) + 1,
     }
     return module, metadata
 
@@ -91,11 +108,14 @@ def main():
             raise ValueError("Upstream exceeded 16 MiB")
         text = data.decode("utf-8")
     module, metadata = build(text)
+    config, config_metadata = build(text, full_config=True)
+    metadata.update(config_metadata)
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    output = args.output_dir / MODULE_NAME
-    temp = output.with_suffix(".tmp")
-    temp.write_text(module)
-    temp.replace(output)
+    for name, content in [(CONFIG_NAME, config), (MODULE_NAME, module)]:
+        output = args.output_dir / name
+        temp = output.with_suffix(".tmp")
+        temp.write_text(content)
+        temp.replace(output)
     (args.output_dir / "build-info.json").write_text(json.dumps(metadata, indent=2) + "\n")
     print(json.dumps(metadata))
 
