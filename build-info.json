@@ -1,10 +1,10 @@
 {
   "source": "https://raw.githubusercontent.com/Johnshall/Shadowrocket-ADBlock-Rules-Forever/release/sr_cnip_ad.conf",
-  "upstream_build": "UTC 2026-11-25 23:02:48",
-  "upstream_sha256": "0c0b1ab255a624cc69b22f7962251c3548edfe005d10a1e8b48817e81ba222a7",
-  "module_sha256": "90d0e31dc39646ad88ce0dcac60ed61ca51f57e4d0521e2c1fe96ff2237f52b0",
-  "upstream_rules": 54051,
-  "module_rules": 54052,
-  "config_sha256": "86090a8b03149d25f646e3a7dc42ce660e7fdd8f26bc52ef644fcd323bf4fbe4",
-  "config_rules": 54052
+  "upstream_build": "UTC 2026-11-26 23:02:46",
+  "upstream_sha256": "7db6038e133f47228cc7dae2313f0f6dace7b025a335cee1ea2927a9d672e92b",
+  "module_sha256": "7a256190d95fd4b24cdd1c5b82eea2dea8888ffa265dff4ea68d9c2200c2dddb",
+  "upstream_rules": 54436,
+  "module_rules": 54437,
+  "config_sha256": "e2f9742f502f3ef9757bf88b2a0a7b0e6302af8294d786e69262201e2e34fd8b",
+  "config_rules": 54437
 }
